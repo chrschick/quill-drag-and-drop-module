@@ -71,7 +71,7 @@ export default class DragAndDropModule {
         // loop through each file_info and attach them to the editor
         // file_info is undefined if onDrop returned false
         if (file_info) {
-          const {data, tag, attr, filen_ame} = file_info;
+          const {data, tag, attr, file_name} = file_info;
           // create an element from the given `tag` (e.g. 'img')
           const new_element = document.createElement(tag);
 
