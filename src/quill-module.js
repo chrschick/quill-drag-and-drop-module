@@ -6,7 +6,8 @@ const DEFAULT_OPTIONS = {
   container: null,
   onDrop: null,
   draggable_content_type_patterns: [
-    image_content_type_pattern
+    image_content_type_pattern,
+    '^application\/'
   ]
 };
 
@@ -37,12 +38,12 @@ export default class DragAndDropModule {
 
       event.stopPropagation();
       event.preventDefault();
-
+      
       // call onDrop for each dropped file
       Promise.all(file_infos.map(file_info => {
         return Promise
           .resolve((onDrop || nullReturner)(file_info.file, {tag: file_info.tag, attr: file_info.attr}))
-          .then(ret => ({on_drop_ret_val: ret, file_info}));
+          .then(ret => ({ on_drop_ret_val: ret, file_info }));
       }))
 
       // map return vals of onDrop/nullReturner to file datas
@@ -60,27 +61,28 @@ export default class DragAndDropModule {
         // if ret is non-false and non-null, it means onDrop returned
         // something (or promised something) that isn't null or false.
         // Assume it's what we should use for tag[draggable.attr]
-        let data;
-        if (on_drop_ret_val === null)
-          data = getFileDataUrl(file_info.file);
-        else
-          data = on_drop_ret_val;
 
+        let data = on_drop_ret_val;
         return Promise
           .resolve(data)
-          .then(ret => ({data: ret, tag, attr}));
+          .then(ret => ({data: ret, tag, attr, file_name: file_info.file.name}));
       })))
       .then(datas => datas.forEach(file_info => {
         // loop through each file_info and attach them to the editor
-
         // file_info is undefined if onDrop returned false
         if (file_info) {
-          const {data, tag, attr} = file_info;
+          const {data, tag, attr, filen_ame} = file_info;
           // create an element from the given `tag` (e.g. 'img')
           const new_element = document.createElement(tag);
 
           // set `attr` to `data` (e.g. img.src = "data:image/png;base64..")
           new_element.setAttribute(attr, data);
+          if(file_info.tag === 'a') {
+            var linkText = document.createTextNode(file_info.file_name)
+            new_element.appendChild(linkText);
+          } else {
+            new_element.setAttribute('alt', file_info.file_name)
+          }
 
           // attach the tag to the quill container
           // TODO: maybe a better way to determine *exactly* where to append
@@ -88,7 +90,9 @@ export default class DragAndDropModule {
           // that only gets us the node itself, not the position within the
           // node (i.e., if the node is a text node, maybe it's possible to
           // split the text node on the point where the user to dropped)
+          // Set file to display in editor
           node.appendChild(new_element);
+        
         }
       }));
     });

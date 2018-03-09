@@ -76,7 +76,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var DEFAULT_OPTIONS = {
 	  container: null,
 	  onDrop: null,
-	  draggable_content_type_patterns: [image_content_type_pattern]
+	  draggable_content_type_patterns: [image_content_type_pattern, '^application\/']
 	};
 
 	var private_data = new WeakMap();
@@ -110,10 +110,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return Promise.resolve((onDrop || _utils.nullReturner)(file_info.file, { tag: file_info.tag, attr: file_info.attr })).then(function (ret) {
 	          return { on_drop_ret_val: ret, file_info: file_info };
 	        });
-	      })
+	      }))
 
 	      // map return vals of onDrop/nullReturner to file datas
-	      ).then(function (datas) {
+	      .then(function (datas) {
 	        return Promise.all(datas.map(function (_ref) {
 	          var on_drop_ret_val = _ref.on_drop_ret_val,
 	              file_info = _ref.file_info;
@@ -133,28 +133,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	          // something (or promised something) that isn't null or false.
 	          // Assume it's what we should use for tag[draggable.attr]
 
-	          var data = void 0;
-	          if (on_drop_ret_val === null) data = (0, _utils.getFileDataUrl)(file_info.file);else data = on_drop_ret_val;
-
+	          var data = on_drop_ret_val;
 	          return Promise.resolve(data).then(function (ret) {
-	            return { data: ret, tag: tag, attr: attr };
+	            return { data: ret, tag: tag, attr: attr, file_name: file_info.file.name };
 	          });
 	        }));
 	      }).then(function (datas) {
 	        return datas.forEach(function (file_info) {
 	          // loop through each file_info and attach them to the editor
-
 	          // file_info is undefined if onDrop returned false
 	          if (file_info) {
 	            var data = file_info.data,
 	                tag = file_info.tag,
-	                attr = file_info.attr;
+	                attr = file_info.attr,
+	                filen_ame = file_info.filen_ame;
 	            // create an element from the given `tag` (e.g. 'img')
 
 	            var new_element = document.createElement(tag);
 
 	            // set `attr` to `data` (e.g. img.src = "data:image/png;base64..")
 	            new_element.setAttribute(attr, data);
+	            if (file_info.tag === 'a') {
+	              var linkText = document.createTextNode(file_info.file_name);
+	              new_element.appendChild(linkText);
+	            } else {
+	              new_element.setAttribute('alt', file_info.file_name);
+	            }
 
 	            // attach the tag to the quill container
 	            // TODO: maybe a better way to determine *exactly* where to append
@@ -162,6 +166,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // that only gets us the node itself, not the position within the
 	            // node (i.e., if the node is a text node, maybe it's possible to
 	            // split the text node on the point where the user to dropped)
+	            // Set file to display in editor
 	            node.appendChild(new_element);
 	          }
 	        });
